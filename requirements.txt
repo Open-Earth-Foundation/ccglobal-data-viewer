@@ -1,0 +1,6 @@
+cartopy==0.22.0
+matplotlib==3.6.1
+shapely==2.0.2
+sqlalchemy== 2.0.22
+streamlit==1.27.2
+psycopg2-binary==2.9.6
