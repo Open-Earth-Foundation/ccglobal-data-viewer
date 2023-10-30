@@ -15,6 +15,6 @@ streamlit run Homepage.py
 
 ## Figures
 
-![argentina](./figures/AR_assets.jpg)
+![argentina](./figures/AR_assets.JPG)
 
 ![california](./figures/US-CA_assets.jpg)
