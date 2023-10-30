@@ -62,10 +62,10 @@ def locode_data(session, locode):
     results = session.execute(query, {'locode': locode}).fetchall()
     return results
 
-def data_near_locode(session, north, south, east, west):
+def db_query(session, north, south, east, west):
     query = text(
            """
-           SELECT DISTINCT lat, lon
+           SELECT DISTINCT lat, lon, filename, reference_number
            FROM asset
            WHERE lat <= :north
            AND lat >= :south
@@ -80,6 +80,7 @@ def data_near_locode(session, north, south, east, west):
         'west': west
     }
     return session.execute(query, params).fetchall()
+
 
 with st.sidebar:
     st.header("City Viewer")
@@ -138,7 +139,7 @@ with st.container():
     west = records['bbox_west'] - lon_pad
 
     with Session() as session:
-        results = data_near_locode(session, north, south, east, west)
+        results = db_query(session, north, south, east, west)
 
     polygon_wkt = records['geometry']
     polygon = wkt.loads(polygon_wkt)
@@ -153,6 +154,8 @@ with st.container():
     else:
         lons = [record.lon for record in records_in_geom]
         lats = [record.lat for record in records_in_geom]
+
+    reference_numbers = set(sorted([record.reference_number for record in records_in_geom]))
 
     central_longitude = 11
     continent_color = [0.3,0.3,0.3]
@@ -228,5 +231,5 @@ with st.container():
 
     st.header(f"Assets within {locode}")
     st.write(f"Number of assets: {len(records_in_geom)}")
-
+    st.write(f"Reference numbers: {reference_numbers}")
     st.pyplot(fig)

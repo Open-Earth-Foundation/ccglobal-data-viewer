@@ -155,7 +155,7 @@ with st.container():
         lons = [record.lon for record in records_in_geom]
         lats = [record.lat for record in records_in_geom]
 
-    #plt.scatter(lons, lats)
+    reference_numbers = set(sorted([record.reference_number for record in records_in_geom]))
 
     session.close()
 
@@ -244,5 +244,5 @@ with st.container():
 
     st.header(f"Assets within {region_code}")
     st.write(f"Number of assets: {len(records_in_geom)}")
-
+    st.write(f"Reference numbers: {reference_numbers}")
     st.pyplot(fig)
