@@ -1,5 +1,5 @@
-# locode-data-viewer
-Streamlit app to visualize LOCODE boundaries and nearby data sources
+# Data Viewer
+Streamlit app to visualize region boundaries and ClimateTRACE assets within it.
 
 This currently requires having the `ccglobal` database installed locally.
 
@@ -10,5 +10,11 @@ pip install -r requirements.txt
 
 run the app
 ```sh
-streamlit run app.py
+streamlit run Homepage.py
 ```
+
+## Figures
+
+![argentina](./figures/AR_assets.jpg)
+
+![california](./figures/US-CA_assets.jpg)
