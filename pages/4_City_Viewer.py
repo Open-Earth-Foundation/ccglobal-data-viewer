@@ -2,15 +2,42 @@ import cartopy.crs as ccrs
 from cartopy.mpl.geoaxes import GeoAxes
 from cartopy.io.img_tiles import OSM
 import cartopy.feature as cfeature
+import cartopy.io.shapereader as shpreader
 from matplotlib.patches import Polygon as mplPolygon
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 from shapely import wkt
+from shapely.geometry import Point
 import shapely.geometry as geom
 from sqlalchemy import create_engine, MetaData, text
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
+import numpy as np
+import cartopy.io.img_tiles as cimgt
+import io
+from urllib.request import urlopen, Request
+from PIL import Image
 
+
+def lat_lon_inside_geom(lat, lon, geometry):
+    """test if lat lon is inside a WKT geometry
+
+    Parameters
+    ----------
+    lat: float
+        latitude value
+    lon: float
+        longitude value
+    wkt: str
+        geometry in well-known-text format
+
+    Returns
+    -------
+    is_inside: bool
+        boolean value indicating whether lat, lon is inside the WKT
+    """
+    point = Point(lon, lat)
+    return point.within(geometry)
 
 def get_locode_data(session, locode):
     query = text(
@@ -55,15 +82,33 @@ def data_near_locode(session, north, south, east, west):
     return session.execute(query, params).fetchall()
 
 with st.sidebar:
-    st.header("ClimateTRACE assets near LOCODE")
+    st.header("City Viewer")
     st.write(
         """
-        Enter a LOCODE see the location of nearby ClimateTRACE assets.
+        View the location of ClimateTRACE assets within a city.
+        Use the controls below to change the figure.
         """)
+    st.subheader("Select state")
     locode = st.text_input("City LOCODE:", value='US NYC')
-    osm_background = st.toggle('OSM background image', value=False)
+    show_outside_point = st.toggle('Show points outside the region', value=False)
+    st.markdown("""---""")
+
+    st.subheader("Background image")
+    osm_background = st.toggle('Show background map', value=True)
+    map_resolution = st.number_input("Map resolution (higher value, greater resolution)", min_value=0, max_value=10, step=1, value=10)
+    st.markdown("""---""")
+
+    st.subheader("Figure")
     lat_pad = st.number_input("Latitude padding (degrees)", min_value=0.0, max_value=90.0, step=0.05, value=0.1)
     lon_pad = st.number_input("Longitude padding (degrees)", min_value=0.0, max_value=180.0, step=0.05, value=0.1)
+
+    st.markdown("""---""")
+
+    st.subheader("Scatter points")
+    marker_color = st.text_input("Marker color", value='red')
+    marker_size = st.number_input("Marker size", min_value=1, max_value=100, step=5, value=20)
+    edge_color = st.text_input("Edger color", value='white')
+    edge_width = st.number_input("Edge width", min_value=0.0, max_value=1.0, step=0.1, value=0.1)
 
 with st.container():
     database_uri = 'postgresql://ccglobal:@localhost/ccglobal'
@@ -98,15 +143,26 @@ with st.container():
     polygon_wkt = records['geometry']
     polygon = wkt.loads(polygon_wkt)
 
+    # filter records
+    records_in_geom = [record for record in results if lat_lon_inside_geom(record.lat, record.lon, polygon)]
+
+    # plot records
+    if show_outside_point:
+        lons = [record.lon for record in results]
+        lats = [record.lat for record in results]
+    else:
+        lons = [record.lon for record in records_in_geom]
+        lats = [record.lat for record in records_in_geom]
+
     central_longitude = 11
     continent_color = [0.3,0.3,0.3]
     coastline_color = [0.25, 0.25, 0.25]
     coastline_width: float = 0.5
-    color = 'red'
+    color = marker_color
     marker = 'o'
-    s = 20
-    edgecolor = 'white'
-    linewidth = 0.1
+    s = marker_size
+    edgecolor = edge_color
+    linewidth = edge_width
 
     fig = plt.figure(dpi=300)
 
@@ -130,20 +186,16 @@ with st.container():
 
     grid = AxesGrid(fig, **params_axesgrid)
 
-    for result in results:
-        lat = result[0]
-        lon = result[1]
-
-        grid[0].scatter(
-            lon, lat,
-            transform=ccrs.PlateCarree(),
-            color=color,
-            marker=marker,
-            zorder=2,
-            s=s,
-            edgecolor=edgecolor,
-            linewidth=linewidth
-        )
+    grid[0].scatter(
+        lons, lats,
+        transform=ccrs.PlateCarree(),
+        color=color,
+        marker=marker,
+        zorder=2,
+        s=marker_size,
+        edgecolor=edgecolor,
+        linewidth=linewidth
+    )
 
     grid[0].set_extent([west, east, south, north], crs = ccrs.PlateCarree())
 
@@ -170,8 +222,11 @@ with st.container():
             grid[0].add_patch(boundary)
 
     if osm_background:
-        grid[0].add_image(imagery, 11)
+        grid[0].add_image(imagery, map_resolution)
     else:
         grid[0].add_feature(cfeature.LAND)
+
+    st.header(f"Assets within {locode}")
+    st.write(f"Number of assets: {len(records_in_geom)}")
 
     st.pyplot(fig)

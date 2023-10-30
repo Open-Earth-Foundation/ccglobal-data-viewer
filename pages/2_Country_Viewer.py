@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, MetaData, text
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
 
+
 def get_country(iso: str):
     shp_countries = shpreader.natural_earth(
         resolution='110m',
@@ -77,17 +78,36 @@ def db_query(session, north, south, east, west):
 
     return result
 
-
 with st.sidebar:
-    st.header("ClimateTRACE assets within region")
+    st.header("Country Viewer")
     st.write(
         """
-        Enter an ISO region code to see the location of nearby ClimateTRACE assets.
+        View the location of ClimateTRACE assets within a country.
+        Use the controls below to change the figure.
         """)
+
+    st.subheader("Select country")
     region_code = st.text_input("Region ISO Code:", value='AR')
-    #osm_background = st.toggle('OSM background image', value=False)
-    #lat_pad = st.number_input("Latitude padding (degrees)", min_value=0.0, max_value=90.0, step=0.05, value=0.1)
-    #lon_pad = st.number_input("Longitude padding (degrees)", min_value=0.0, max_value=180.0, step=0.05, value=0.1)
+    show_outside_point = st.toggle('Show points outside the region', value=False)
+    st.markdown("""---""")
+
+    st.subheader("Background image")
+    osm_background = st.toggle('Show background map', value=True)
+    map_resolution = st.number_input("Map resolution (higher value, greater resolution)", min_value=0, max_value=10, step=1, value=4)
+    st.markdown("""---""")
+
+    st.subheader("Figure")
+    lat_pad = st.number_input("Latitude padding (degrees)", min_value=0.0, max_value=90.0, step=0.05, value=0.1)
+    lon_pad = st.number_input("Longitude padding (degrees)", min_value=0.0, max_value=180.0, step=0.05, value=0.1)
+
+    st.markdown("""---""")
+
+    st.subheader("Scatter points")
+    marker_color = st.text_input("Marker color", value='red')
+    marker_size = st.number_input("Marker size", min_value=1, max_value=100, step=5, value=20)
+    edge_color = st.text_input("Edger color", value='white')
+    edge_width = st.number_input("Edge width", min_value=0.0, max_value=1.0, step=0.1, value=0.1)
+
 
 with st.container():
 
@@ -106,18 +126,18 @@ with st.container():
     records_in_geom = [record for record in records if lat_lon_inside_geom(record.lat, record.lon, polygon)]
 
     # plot records
-    lons = [record.lon for record in records_in_geom]
-    lats = [record.lat for record in records_in_geom]
+    if show_outside_point:
+        lons = [record.lon for record in records]
+        lats = [record.lat for record in records]
+    else:
+        lons = [record.lon for record in records_in_geom]
+        lats = [record.lat for record in records_in_geom]
 
     #plt.scatter(lons, lats)
 
     session.close()
 
-
-
     imagery = OSM()
-
-    osm_background = False
 
     facecolor = [0,0,0]
     edgecolor = 'black'
@@ -130,11 +150,11 @@ with st.container():
     continent_color = [0.3,0.3,0.3]
     coastline_color = [0.25, 0.25, 0.25]
     coastline_width: float = 0.5
-    color = 'red'
+    color = marker_color
     marker = 'o'
-    s = 20
-    edgecolor = 'white'
-    linewidth = 0.1
+    s = marker_size
+    edgecolor = edge_color
+    linewidth = edge_width
 
     fig = plt.figure(dpi=300)
 
@@ -169,8 +189,7 @@ with st.container():
         linewidth=linewidth
     )
 
-    padding = 0.1
-    grid[0].set_extent([west-padding, east+padding, south-padding, north+padding], crs = ccrs.PlateCarree())
+    grid[0].set_extent([west-lon_pad, east+lon_pad, south-lat_pad, north+lat_pad], crs = ccrs.PlateCarree())
 
     polygon_params = {
         'edgecolor' : edgecolor,
@@ -194,8 +213,11 @@ with st.container():
             )
             grid[0].add_patch(boundary)
 
+    if osm_background:
+        grid[0].add_image(imagery, map_resolution)
+    else:
+        grid[0].add_feature(cfeature.LAND)
 
-
+    st.header(f"Assets within {region_code}")
+    st.write(f"Number of assets: {len(records_in_geom)}")
     st.pyplot(fig)
-
-    st.write(f"Number of records: {len(records_in_geom)}")
