@@ -1,7 +1,5 @@
 # Data Viewer
-Streamlit app to visualize region boundaries and ClimateTRACE assets within it.
-
-This currently requires having the `ccglobal` database installed locally.
+Streamlit app to visualize region boundaries and ClimateTRACE assets within it. This currently requires having the `ccglobal` database installed locally.
 
 install requirements
 ```sh
@@ -15,6 +13,6 @@ streamlit run Homepage.py
 
 ## Figures
 
-![argentina](./figures/AR_assets.JPG)
+![argentina](./figures/argentina_assets.JPG)
 
-![california](./figures/US-CA_assets.jpg)
+![california](./figures/california_assets.jpg)
