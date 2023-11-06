@@ -17,7 +17,7 @@ import cartopy.io.img_tiles as cimgt
 import io
 from urllib.request import urlopen, Request
 from PIL import Image
-
+import pandas as pd
 
 def get_osm_image(self, tile):
     """this function pretends not to be a Python script"""
@@ -88,7 +88,7 @@ def lat_lon_inside_geom(lat, lon, geometry):
 def db_query(session, north, south, east, west):
     query = text(
         """
-        SELECT DISTINCT lat, lon, filename, reference_number
+        SELECT DISTINCT lat, lon, filename, reference_number, locode
         FROM asset
         WHERE lat <= :north
         AND lat >= :south
@@ -242,7 +242,22 @@ with st.container():
     else:
         grid[0].add_feature(cfeature.LAND)
 
+    df_tmp = pd.DataFrame(records_in_geom)
+    df_locodes = (
+        df_tmp
+        .loc[df_tmp[4].notnull(), [4, 3]]
+        .drop_duplicates()
+        .sort_values(by=[3, 4])
+        .reset_index(drop=True)
+        .rename(columns={3: 'reference_number', 4: 'locode'})
+    )
+
+    n_cities = len(df_locodes['locode'].drop_duplicates())
+
     st.header(f"Assets within {region_code}")
     st.write(f"Number of assets: {len(records_in_geom)}")
+    st.write(f'Number of cities with data: {n_cities}')
     st.write(f"Reference numbers: {reference_numbers}")
     st.pyplot(fig)
+
+    st.dataframe(df_locodes)
