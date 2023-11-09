@@ -65,7 +65,7 @@ def db_query_climatetrace(session, north, south, east, west):
     return result
 
 
-def db_query_edgar(session, iso):
+def db_query_edgar_by_iso(session, iso):
     query = text(
         """
         SELECT DISTINCT cc.locode
@@ -78,6 +78,36 @@ def db_query_edgar(session, iso):
     params = {'iso': iso}
     result = session.execute(query, params).fetchall()
 
+    return result
+
+
+def db_query_edgar_by_range(session, north, south, east, west):
+    query = text(
+        """
+        WITH "GridCells" AS (
+            SELECT DISTINCT id, lat_center, lon_center
+            FROM "GridCellEdgar"
+            WHERE lat_center <= :north
+            AND lat_center >= :south
+            AND lon_center <= :east
+            AND lon_center >= :west
+        )
+
+        SELECT
+            gc.lat_center AS lat,
+            gc.lon_center AS lon,
+            gce.reference_number,
+            cc.locode
+        FROM "GridCells" AS gc
+        JOIN "CityCellOverlapEdgar" AS cc
+            ON gc.id = cc.cell_id
+        JOIN "GridCellEmissionsEdgar" AS gce
+            ON gc.id = gce.cell_id
+        """
+    )
+
+    params = {"north": north, "south": south, "east": east, "west": west}
+    result = session.execute(query, params).fetchall()
     return result
 
 

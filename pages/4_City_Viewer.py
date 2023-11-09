@@ -188,6 +188,9 @@ with st.container():
         grid[0].add_feature(cfeature.LAND)
 
     st.header(f"Assets within {locode}")
+
+    with st.expander("See Figure"):
+        st.pyplot(fig)
+
     st.write(f"Number of assets: {len(records_in_geom)}")
     st.write(f"Reference numbers: {reference_numbers}")
-    st.pyplot(fig)

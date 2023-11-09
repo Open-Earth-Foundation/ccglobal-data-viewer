@@ -188,9 +188,13 @@ with st.container():
     n_cities = len(df_locodes["locode"].drop_duplicates())
 
     st.header(f"Assets within {region_code}")
+
+    with st.expander("See Figure"):
+        st.pyplot(fig)
+
     st.write(f"Number of assets: {len(records_in_geom)}")
     st.write(f"Number of cities with data: {n_cities}")
     st.write(f"Reference numbers: {reference_numbers}")
-    st.pyplot(fig)
 
+    st.header("ClimateTRACE dataframe")
     st.dataframe(df_locodes)

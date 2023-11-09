@@ -11,7 +11,12 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
 
-from utils import get_country, lat_lon_inside_geom, db_query_climatetrace
+from utils import (
+    get_country,
+    lat_lon_inside_geom,
+    db_query_climatetrace,
+    db_query_edgar_by_range
+)
 
 with st.sidebar:
     st.header("Country Viewer")
@@ -82,6 +87,14 @@ with st.container():
         records_in_geom = [
             record
             for record in records
+            if lat_lon_inside_geom(record.lat, record.lon, polygon)
+        ]
+
+        records_edgar = db_query_edgar_by_range(session, north, south, east, west)
+
+        edgar_records_in_geom = [
+            record
+            for record in records_edgar
             if lat_lon_inside_geom(record.lat, record.lon, polygon)
         ]
 
@@ -179,7 +192,7 @@ with st.container():
     # Additional information
     # ==========================
     df_tmp = pd.DataFrame(records_in_geom)
-    df_locodes = (
+    df_locodes_climatetrace = (
         df_tmp.loc[df_tmp[4].notnull(), [4, 3]]
         .drop_duplicates()
         .sort_values(by=[3, 4])
@@ -187,12 +200,31 @@ with st.container():
         .rename(columns={3: "reference_number", 4: "locode"})
     )
 
-    n_cities = len(df_locodes["locode"].drop_duplicates())
+    n_cities_climatetrace = len(df_locodes_climatetrace["locode"].drop_duplicates())
+
+    df_tmp = pd.DataFrame(edgar_records_in_geom)
+    df_locodes_edgar = (
+        df_tmp.loc[df_tmp[3].notnull(), [3, 2]]
+        .drop_duplicates()
+        .sort_values(by=[2, 3])
+        .reset_index(drop=True)
+        .rename(columns={2: "reference_number", 3: "locode"})
+    )
+    n_cities_edgar = len(df_locodes_edgar["locode"].drop_duplicates())
 
     st.header(f"Assets within {region_code}")
-    st.write(f"Number of assets: {len(records_in_geom)}")
-    st.write(f"Number of cities with data: {n_cities}")
-    st.write(f"Reference numbers: {reference_numbers}")
-    st.pyplot(fig)
 
-    st.dataframe(df_locodes)
+    with st.expander("See Figure"):
+        st.pyplot(fig)
+
+    st.write(f"Number of assets: {len(records_in_geom)}")
+    #st.write(f"Number of EDGAR cells: {len(edgar_records_in_geom)}")
+    st.write(f"Number of cities with data (climateTRACE): {n_cities_climatetrace}")
+    st.write(f"Number of cities with data (EDGAR): {n_cities_edgar}")
+    st.write(f"Reference numbers: {reference_numbers}")
+
+    st.header("ClimateTRACE dataframe")
+    st.dataframe(df_locodes_climatetrace)
+
+    st.header("EDGAR dataframe")
+    st.dataframe(df_locodes_edgar)
