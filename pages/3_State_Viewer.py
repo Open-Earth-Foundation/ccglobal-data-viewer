@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
 
-from utils import get_state, lat_lon_inside_geom, db_query
+from utils import get_state, lat_lon_inside_geom, db_query_climatetrace
 
 with st.sidebar:
     st.header("State Viewer")
@@ -75,7 +75,7 @@ with st.container():
         polygon = get_state(region_code)
         west, south, east, north = polygon.bounds
 
-        records = db_query(session, north, south, east, west)
+        records = db_query_climatetrace(session, north, south, east, west)
 
         records_in_geom = [
             record

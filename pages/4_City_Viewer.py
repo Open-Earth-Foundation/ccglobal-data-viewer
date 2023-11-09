@@ -14,7 +14,7 @@ import streamlit as st
 from utils import (
     locode_data,
     lat_lon_inside_geom,
-    db_query,
+    db_query_climatetrace,
 )
 
 with st.sidebar:
@@ -90,7 +90,7 @@ with st.container():
         east = records["bbox_east"] + lon_pad
         west = records["bbox_west"] - lon_pad
 
-        results = db_query(session, north, south, east, west)
+        results = db_query_climatetrace(session, north, south, east, west)
 
     imagery = OSM()
 

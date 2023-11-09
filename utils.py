@@ -48,7 +48,7 @@ def lat_lon_inside_geom(lat, lon, geometry):
     return point.within(geometry)
 
 
-def db_query(session, north, south, east, west):
+def db_query_climatetrace(session, north, south, east, west):
     query = text(
         """
         SELECT DISTINCT lat, lon, filename, reference_number, locode
@@ -60,6 +60,22 @@ def db_query(session, north, south, east, west):
         """
     )
     params = {"north": north, "south": south, "east": east, "west": west}
+    result = session.execute(query, params).fetchall()
+
+    return result
+
+
+def db_query_edgar(session, iso):
+    query = text(
+        """
+        SELECT DISTINCT cc.locode
+        FROM "CityCellOverlapEdgar" AS cc
+        JOIN "GridCellEmissionsEdgar" AS gc ON gc.cell_id = cc.cell_id
+        WHERE cc.locode LIKE :iso || '%';
+        """
+    )
+
+    params = {'iso': iso}
     result = session.execute(query, params).fetchall()
 
     return result
