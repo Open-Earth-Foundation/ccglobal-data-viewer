@@ -24,7 +24,7 @@ jobs:
         VERSION: ${{ github.sha }}
         IMAGE: ghcr.io/open-earth-foundation/ccglobal-data-viewer
       run: |
-        docker build -t $IMAGE:$VERSION app
+        docker build -t $IMAGE:$VERSION .
         docker tag $IMAGE:$VERSION $IMAGE:latest
         docker push $IMAGE:$VERSION
         docker push $IMAGE:latest
