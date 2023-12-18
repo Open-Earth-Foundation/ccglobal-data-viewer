@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dv-deploy
+  labels:
+    app: dv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dv
+  template:
+    metadata:
+      labels:
+        app: dv
+    spec:
+      containers:
+        - name: dv
+          image: ghcr.io/open-earth-foundation/ccglobal-data-viewer:latest
+          # Set to Never for local
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          env:
+            - name: DATABASE_URI
+              value: "postgresql://ccglobal:ccglobal@cc-global-api-db:5432/ccglobal"
+          resources:
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
