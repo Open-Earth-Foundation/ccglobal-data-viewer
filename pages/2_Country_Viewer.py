@@ -10,6 +10,7 @@ import shapely.geometry as geom
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 import streamlit as st
+import os
 
 from utils import (
     get_country,
@@ -73,7 +74,7 @@ with st.sidebar:
 
 
 with st.container():
-    database_uri = "postgresql://ccglobal:@localhost/ccglobal"
+    database_uri = os.environ.get("DATABASE_URI") or "postgresql://ccglobal:@localhost/ccglobal"
     engine = create_engine(database_uri)
     metadata_obj = MetaData()
     Session = sessionmaker(bind=engine)
