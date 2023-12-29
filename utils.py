@@ -64,6 +64,20 @@ def db_query_climatetrace(session, north, south, east, west):
 
     return result
 
+def db_query_climatetrace_locode(session, locode, sector):
+    query = text(
+    """
+    SELECT DISTINCT locode, EXTRACT(YEAR FROM start_time) AS year, reference_number
+    FROM asset
+    WHERE locode = :locode
+    AND reference_number ILIKE :sector
+    """
+    )
+    params = {"locode": locode, "sector": f'{sector}.%'}
+    result = session.execute(query, params).fetchall()
+
+    return result
+
 
 def db_query_edgar_by_iso(session, iso):
     query = text(
@@ -80,6 +94,17 @@ def db_query_edgar_by_iso(session, iso):
 
     return result
 
+def db_query_city_name(session, city):
+    query = text("""
+        SELECT locode, name, display_name FROM osm
+        WHERE name ILIKE :city;
+        """
+    )
+
+    params =  {"city": f'%{city}%'}
+    result = session.execute(query, params).fetchall()
+
+    return result
 
 def db_query_edgar_by_range(session, north, south, east, west):
     query = text(
